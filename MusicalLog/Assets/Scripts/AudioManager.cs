@@ -12,7 +12,7 @@ public class AudioManager : MonoBehaviour {
 		jukeBox = GameObject.Find ("JukeBox").GetComponent<AudioSource> ();
 		samples = new float[4096];
 
-		cubes = new GameObject[128];
+		cubes = new GameObject[64];
 		for (int i = 0; i < cubes.Length; i++) {
 			cubes[i] = (GameObject)Instantiate(musicCube, new Vector3 ((musicCube.transform.localScale.x + 1) * i, 0, 0), Quaternion.identity);
 		}
