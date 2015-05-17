@@ -83,4 +83,12 @@ public class AudioManager : MonoBehaviour {
 		//int[] notes = DetectNotes ();
 		// play note
 	}
+	 
+//	int[] DetectNotes () {
+//		int searchSpace = spectrumData.Length / numOfNotes;
+//		for (int i = 0; i < numOfNotes; i++) {
+//			// check each division for prominent frequencies
+//		}
+//		return 
+//	}
 }
