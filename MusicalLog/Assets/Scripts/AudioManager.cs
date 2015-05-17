@@ -4,51 +4,60 @@ using System.Collections;
 public class AudioManager : MonoBehaviour {
 	public GameObject noteBlock;
 	AudioSource audioSrc;
-	float[] spectrumData, spectrumBuffer;
+	float[] spectrumData, spectrumBuffer, shiftedBuffer;
 	int sampleSize = 1024;
 	int sampleRate = 44100;
-	float constant = 1;
 	bool isBeat = false;
 
 	void Start () {
 		audioSrc = GetComponent<AudioSource> ();
 		spectrumData = new float[sampleSize];
 		spectrumBuffer = new float[(int)(sampleRate / sampleSize)];
+		// Initialize buffer to 0 for each element
+		for (int i = 0; i < spectrumBuffer.Length; i++) {
+			spectrumBuffer[i] = 0.0f;
+		}
 	}
 
 	void Update () {
-		if (InstantSoundEnergy() > AverageSoundEnergy() * constant) {
+		if (InstantSoundEnergy() > AverageSoundEnergy() * 1f) {
 			isBeat = true;
 		}
 
 		if (isBeat) {
-			noteBlock.transform.localScale = new Vector3 (1, 2, 1);
+			Debug.Log ("BEAT");
 			isBeat = false;
-		} else {
-			noteBlock.transform.localScale = new Vector3 (1, 1, 1);
 		}
 	}
 
 	// Current Sound Energy
 	float InstantSoundEnergy () {
 		audioSrc.GetSpectrumData (spectrumData, 1, FFTWindow.BlackmanHarris);
-		float energy = 0.0f;
-		for (int i = 0; i < spectrumData.Length; i++) {
-			energy += spectrumData[i];
-		}
+		float energy = SumFloatArray (spectrumData);
 		return energy;
 	}
 
 	// Local Average Sound Energy
 	float AverageSoundEnergy () {
-		float averageEnergy = 0.0f;
-		for (int i = 0; i < spectrumBuffer.Length; i++) {
-			averageEnergy += spectrumData[i];
+		shiftedBuffer = new float[spectrumBuffer.Length];
+		for (int i = 0; i < shiftedBuffer.Length - 1; i++) {
+			shiftedBuffer[i+1] = spectrumBuffer[i];
 		}
-		averageEnergy /= spectrumBuffer.Length;
+		shiftedBuffer[0] = InstantSoundEnergy ();
+		spectrumBuffer = shiftedBuffer;
+		float averageEnergy = SumFloatArray (spectrumBuffer) / spectrumBuffer.Length;
 		return averageEnergy;
 	}
 
+	// Sum of all array elements
+	float SumFloatArray (float[] array) {
+		float sum = 0.0f;
+		for (int i = 0; i < array.Length; i++) {
+			sum += array[i];
+		}
+		return sum;
+	}
+	 
 
 //	GameObject musicCube;
 //	AudioSource jukeBox;
