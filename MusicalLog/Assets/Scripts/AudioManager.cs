@@ -7,45 +7,55 @@ public class AudioManager : MonoBehaviour {
 	float[] spectrumData, spectrumBuffer, shiftedBuffer;
 	int sampleSize = 1024;
 	int sampleRate = 44100;
+	int bufferLength;
+	float constant, variance;
 	bool isBeat = false;
+	int numOfNotes = 3;
 
 	void Start () {
 		audioSrc = GetComponent<AudioSource> ();
+		bufferLength = (int)(sampleRate / sampleSize);
 		spectrumData = new float[sampleSize];
-		spectrumBuffer = new float[(int)(sampleRate / sampleSize)];
+		spectrumBuffer = new float[bufferLength];
 		// Initialize buffer to 0 for each element
-		for (int i = 0; i < spectrumBuffer.Length; i++) {
+		for (int i = 0; i < bufferLength; i++) {
 			spectrumBuffer[i] = 0.0f;
 		}
 	}
 
 	void Update () {
-		if (InstantSoundEnergy() > AverageSoundEnergy() * 1f) {
+		variance = SumVariance () / bufferLength;
+		constant = (-0.0025714f * variance) + 1.5142857f;
+		audioSrc.GetSpectrumData (spectrumData, 1, FFTWindow.BlackmanHarris);
+		if (InstantSoundEnergy() > AverageSoundEnergy() * constant) {
 			isBeat = true;
 		}
 
 		if (isBeat) {
-			Debug.Log ("BEAT");
+			noteBlock.GetComponent<MeshRenderer> ().material.color = Color.red;
+			PlayNotes ();
 			isBeat = false;
-		}
+		} else {
+			noteBlock.GetComponent<MeshRenderer> ().material.color = Color.white;
+		} 
 	}
 
 	// Current Sound Energy
 	float InstantSoundEnergy () {
-		audioSrc.GetSpectrumData (spectrumData, 1, FFTWindow.BlackmanHarris);
 		float energy = SumFloatArray (spectrumData);
+		energy = energy * energy;
 		return energy;
 	}
 
 	// Local Average Sound Energy
 	float AverageSoundEnergy () {
-		shiftedBuffer = new float[spectrumBuffer.Length];
-		for (int i = 0; i < shiftedBuffer.Length - 1; i++) {
+		shiftedBuffer = new float[bufferLength];
+		for (int i = 0; i < bufferLength - 1; i++) {
 			shiftedBuffer[i+1] = spectrumBuffer[i];
 		}
 		shiftedBuffer[0] = InstantSoundEnergy ();
 		spectrumBuffer = shiftedBuffer;
-		float averageEnergy = SumFloatArray (spectrumBuffer) / spectrumBuffer.Length;
+		float averageEnergy = SumFloatArray (spectrumBuffer) / bufferLength;
 		return averageEnergy;
 	}
 
@@ -57,44 +67,20 @@ public class AudioManager : MonoBehaviour {
 		}
 		return sum;
 	}
-	 
 
-//	GameObject musicCube;
-//	AudioSource jukeBox;
-//	float[] samples;
-//	GameObject[] cubes;
-//	// Use this for initialization
-//	void Start () {
-//		musicCube = (GameObject)Resources.Load ("Prefabs/MusicCube");
-//		jukeBox = GameObject.Find ("JukeBox").GetComponent<AudioSource> ();
-//		samples = new float[4096];
-//
-//		cubes = new GameObject[64];
-//		for (int i = 0; i < cubes.Length; i++) {
-//			cubes[i] = (GameObject)Instantiate(musicCube, new Vector3 ((musicCube.transform.localScale.x + 1) * i, 0, 0), Quaternion.identity);
-//		}
-//	}
-//	
-//	// Update is called once per frame
-//	void Update () {
-//		jukeBox.GetSpectrumData (samples, 0, FFTWindow.Rectangular);
-//
-//		for(int i = 0; i < cubes.Length; i++) {
-//			cubes[i].transform.localScale = new Vector3 (1, Mathf.Min (Mathf.Abs(samples[i] * 150) + 1, 40), 1);
-//
-//			cubes[i].GetComponent<MeshRenderer>().material.color = Color.Lerp (Color.green, Color.red, cubes[i].transform.localScale.y/40) ;
-//
-//
-//			/*if (i > 0 && i < cubes.Length - 1) {
-//				if (samples[i] > samples[i+1] && samples[i] > samples[i-1]) {
-//					cubes[i].GetComponent<MeshRenderer>().material.color = Color.red;
-//				}
-//				else {
-//					cubes[i].GetComponent<MeshRenderer>().material.color = Color.green;
-//				}
-//			}*/
-//		}
-//
-//
-//	}
+	// Sum of variance
+	float SumVariance () {
+		float sum = 0;
+		for (int i = 0; i < bufferLength; i++) {
+			float x = spectrumBuffer[i] - AverageSoundEnergy();
+			sum += x * x;
+		}
+		return sum;
+	}
+
+	void PlayNotes () {
+		Debug.Log ("BEAT");
+		//int[] notes = DetectNotes ();
+		// play note
+	}
 }
