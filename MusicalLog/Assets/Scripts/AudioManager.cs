@@ -3,11 +3,12 @@ using System.Collections;
 
 public class AudioManager : MonoBehaviour {
 	public GameObject noteBlock;
+	public int beatTolerance = 2;
 	AudioSource audioSrc;
 	float[] spectrumData, spectrumBuffer, shiftedBuffer;
 	int sampleSize = 1024;
 	int sampleRate = 44100;
-	int bufferLength;
+	int bufferLength, beatCount;
 	float constant, variance;
 	bool isBeat = false;
 	int numOfNotes = 3;
@@ -15,12 +16,14 @@ public class AudioManager : MonoBehaviour {
 	void Start () {
 		audioSrc = GetComponent<AudioSource> ();
 		bufferLength = (int)(sampleRate / sampleSize);
+		//bufferLength = sampleSize;
 		spectrumData = new float[sampleSize];
 		spectrumBuffer = new float[bufferLength];
 		// Initialize buffer to 0 for each element
 		for (int i = 0; i < bufferLength; i++) {
 			spectrumBuffer[i] = 0.0f;
 		}
+		beatCount = beatTolerance;
 	}
 
 	void Update () {
@@ -29,12 +32,14 @@ public class AudioManager : MonoBehaviour {
 		audioSrc.GetSpectrumData (spectrumData, 1, FFTWindow.BlackmanHarris);
 		if (InstantSoundEnergy() > AverageSoundEnergy() * constant) {
 			isBeat = true;
+			beatCount++;
 		}
 
-		if (isBeat) {
+		if (isBeat && beatCount >= beatTolerance) {
 			noteBlock.GetComponent<MeshRenderer> ().material.color = Color.red;
 			PlayNotes ();
 			isBeat = false;
+			beatCount = 0;
 		} else {
 			noteBlock.GetComponent<MeshRenderer> ().material.color = Color.white;
 		} 
